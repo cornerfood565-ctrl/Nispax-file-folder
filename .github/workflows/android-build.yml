@@ -13,6 +13,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -22,6 +23,7 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
+          cache: gradle
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -32,13 +34,19 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android platform
-        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Verify build environment
+        run: |
+          java -version
+          gradle --version
+          sdkmanager --list_installed
 
       - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon --stacktrace --warning-mode all assembleDebug
 
       - name: Run unit tests
-        run: gradle --no-daemon testDebugUnitTest
+        run: gradle --no-daemon --stacktrace testDebugUnitTest
 
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
