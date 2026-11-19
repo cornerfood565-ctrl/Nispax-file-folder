@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.widget.Toast
 import androidx.documentfile.provider.DocumentFile
 import com.nispax.fileexplorer.ui.theme.*
 import java.text.DecimalFormat
@@ -35,7 +36,6 @@ private enum class Tab(val label: String, val icon: ImageVector) {
 @Composable
 fun NispaxApp() {
     var selectedTab by remember { mutableStateOf(Tab.Home) }
-    var selectedTree by remember { mutableStateOf<Uri?>(null) }
     var currentFolder by remember { mutableStateOf<DocumentFile?>(null) }
     val context = LocalContext.current
     val folderPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
@@ -45,7 +45,6 @@ fun NispaxApp() {
                     uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
                 )
             }
-            selectedTree = uri
             currentFolder = DocumentFile.fromTreeUri(context, uri)
             selectedTab = Tab.Browse
         }
@@ -174,6 +173,7 @@ private fun CategoryRow(title: String, icon: ImageVector) {
 
 @Composable
 private fun BrowseScreen(folder: DocumentFile?, onChoose: () -> Unit, onOpen: (DocumentFile) -> Unit) {
+    val context = LocalContext.current
     ScreenHeader("Browse", "Internal and removable storage")
     if (folder == null) {
         EmptyState("No folder selected", "Choose a folder to start browsing files.", "Choose folder", onChoose)
@@ -195,7 +195,9 @@ private fun BrowseScreen(folder: DocumentFile?, onChoose: () -> Unit, onOpen: (D
                                     setDataAndType(file.uri, file.type ?: "*/*")
                                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 }
-                                // Launching is handled by the host activity context in the next iteration.
+                                context.startActivity(intent)
+                            }.onFailure {
+                                Toast.makeText(context, "No app can open this file.", Toast.LENGTH_SHORT).show()
                             } }.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
